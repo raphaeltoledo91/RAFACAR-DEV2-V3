@@ -112,17 +112,44 @@ export function blocked(position = {}) {
   return value === true || value === 1 || value === '1' || value === 'true';
 }
 
+function isMissingDriverValue(value) {
+  if (value === undefined || value === null) return true;
+
+  const raw = String(value).trim();
+  if (!raw) return true;
+
+  const normalized = normalizeText(raw);
+  if (/^0+$/.test(raw)) return true;
+
+  return [
+    '-',
+    '--',
+    '0',
+    'undefined',
+    'null',
+    'none',
+    'unknown',
+    'nao identificado',
+    'não identificado',
+    'sem motorista'
+  ].includes(normalized);
+}
+
+function normalizeDriverValue(value) {
+  return isMissingDriverValue(value) ? '' : String(value).trim();
+}
+
 export function resolveDriverUniqueId(device = {}, position = {}) {
   const attrsSources = [position, device];
 
   for (const source of attrsSources) {
-    const unique = getAttr(source, ['driverUniqueId']);
-    if (unique) return String(unique);
+    const unique = normalizeDriverValue(getAttr(source, ['driverUniqueId']));
+    if (unique) return unique;
   }
 
   for (const source of attrsSources) {
-    const value = getAttr(source, ['driverName', 'driver', 'driverId', 'rfid', 'ibutton']);
-    if (value) return String(value);
+    const value = normalizeDriverValue(getAttr(source, ['driverName', 'driver', 'driverId', 'rfid', 'ibutton']));
+    if (value) return value;
   }
 
   return 'Sem motorista';
